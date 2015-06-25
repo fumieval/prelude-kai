@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 module Prelude.Kai (
 
     -- * Standard types, classes and related functions
@@ -175,6 +176,7 @@ import Control.Applicative
 import Data.Semigroup
 import Data.Tuple
 import Data.Void
+import Data.Orphans
 
 -- | 'asProxyTypeOf' is a type-restricted version of 'const'.
 -- It is usually used as an infix operator, and its typing forces its first
@@ -182,3 +184,9 @@ import Data.Void
 -- of the second.
 asProxyTypeOf :: a -> proxy a -> a
 asProxyTypeOf = const
+
+#if !MIN_VERSION_base(4,9,0)
+instance Monoid m => Monad ((,) m) where
+    return a = (mempty, a)
+    (m, a) >>= k = let (m', b) = k a in (mappend m m', b)
+#endif
