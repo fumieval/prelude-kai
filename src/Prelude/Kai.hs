@@ -7,13 +7,13 @@ module Prelude.Kai (
     Bool(False, True),
     (&&), (||), not, otherwise, bool,
 
+    Void,
+    absurd, vacuous,
+
     Identity(..),
 
     Proxy(..),
     asProxyTypeOf,
-
-    Void,
-    absurd, vacuous,
 
     Maybe(Nothing, Just),
     maybe,
@@ -63,26 +63,31 @@ module Prelude.Kai (
     -- ** Monads and functors
     Functor(fmap, (<$)), (<$>),
     Applicative(pure, (<*>), (*>), (<*)),
+    forever,
+    liftA2,
+    replicateA,
+    replicateA_,
     Alternative(empty, (<|>), some, many),
     optional,
     Monad((>>=), (>>), return, fail),
     mapM_, sequence_, (=<<),
+    void, when, unless,
 
     -- ** Folds and traversals
-    Foldable(elem,      -- :: (Foldable t, Eq a) => a -> t a -> Bool
-             -- fold,   -- :: Monoid m => t m -> m
+    Foldable(fold,   -- :: Monoid m => t m -> m
              foldMap,   -- :: Monoid m => (a -> m) -> t a -> m
              foldr,     -- :: (a -> b -> b) -> b -> t a -> b
-             -- foldr', -- :: (a -> b -> b) -> b -> t a -> b
+             foldr', -- :: (a -> b -> b) -> b -> t a -> b
              foldl,     -- :: (b -> a -> b) -> b -> t a -> b
-             -- foldl', -- :: (b -> a -> b) -> b -> t a -> b
-             foldr1,    -- :: (a -> a -> a) -> t a -> a
-             foldl1,    -- :: (a -> a -> a) -> t a -> a
+             foldl', -- :: (b -> a -> b) -> b -> t a -> b
+             toList,
+             null,
+             length,
+             elem,
              maximum,   -- :: (Foldable t, Ord a) => t a -> a
              minimum,   -- :: (Foldable t, Ord a) => t a -> a
              product,   -- :: (Foldable t, Num a) => t a -> a
              sum),      -- :: Num a => t a -> a
-             -- toList) -- :: Foldable t => t a -> [a]
 
     traverse_,
     for_,
@@ -184,9 +189,22 @@ import Data.Orphans
 -- of the second.
 asProxyTypeOf :: a -> proxy a -> a
 asProxyTypeOf = const
+{-# INLINE asProxyTypeOf #-}
 
 #if !MIN_VERSION_base(4,9,0)
 instance Monoid m => Monad ((,) m) where
     return a = (mempty, a)
     (m, a) >>= k = let (m', b) = k a in (mappend m m', b)
 #endif
+
+replicateA :: Applicative f => Int -> f a -> f [a]
+replicateA m f = go m where
+    go 0 = pure []
+    go n = liftA2 (:) f (go (n - 1))
+{-# INLINE replicateA #-}
+
+replicateA_ :: Applicative f => Int -> f a -> f ()
+replicateA_ m f = go m where
+    go 0 = pure ()
+    go n = f *> go (n - 1)
+{-# INLINE replicateA_ #-}
